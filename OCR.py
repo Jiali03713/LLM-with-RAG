@@ -35,11 +35,17 @@ def extract_text_from_pdf(pdf_path, ):
     return text
 
 
-if __name__ == "__main__":
-    # Open a file dialog to select the PDF file
+
+def select_pdf():
     Tk().withdraw()  # Hide the main Tkinter window
+
     pdf_file = askopenfilename(title="Select PDF file", filetypes=[("PDF files", "*.pdf")])
-    print(pdf_file+"_____________________")
+
     if pdf_file:
         text = extract_text_from_pdf(pdf_file)
         print(text)
+
+
+if __name__ == "__main__":
+    # Open a file dialog to select the PDF file
+    select_pdf()

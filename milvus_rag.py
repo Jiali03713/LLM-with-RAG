@@ -103,7 +103,7 @@ def milvus():
     
 """### Testing"""
 
-def testing(question):
+def milvus_querying(question):
     milvus_client, collection_name = milvus()
 
     search_res = milvus_client.search(
@@ -122,10 +122,10 @@ def testing(question):
 """### Setup LLM
 
 """
-def intergrate_LLM():
+def intergrate_LLM(question):
     os.environ["userdata.get('NVIDIA_API_KEY')"] = os.getenv('NVIDIA_API_KEY')
     # TODO: need to be able to change question
-    context = "\n".join([line_with_distance[0] for line_with_distance in testing()])
+    context = "\n".join([line_with_distance[0] for line_with_distance in milvus_querying(question)])
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_AP_KEY')
 
@@ -136,7 +136,7 @@ def intergrate_LLM():
         top_p=1,
         max_tokens=1024,
     )
-    return context, client, 
+    return context, client
 
 def LLM(question):
     context, client = intergrate_LLM(question)
@@ -157,10 +157,11 @@ def LLM(question):
     return result
 
 
+
 if __name__ == "__main__":
     #testing, can comment out later
     print("START TESTING: ")
-    testing("Hallo")
+    milvus_querying("Hallo")
 
     question = input("Enter the question: ")
     result = LLM(question)
