@@ -25,7 +25,6 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 import torch.nn.functional as F
 from torch import Tensor
 from transformers import AutoTokenizer, AutoModel
-from pymilvus import MilvusClient
 import getpass
 import os
 # from google.colab import userdata
@@ -35,7 +34,8 @@ import os
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from tqdm import tqdm
 import json
-
+from dotenv import load_dotenv
+load_dotenv() 
 
 def read_docs(): # TODO: docs can be changed based on input
     text_lines = []
@@ -44,7 +44,7 @@ def read_docs(): # TODO: docs can be changed based on input
     #     with open(file_path, "r") as file:
     #         file_text = file.read()
 
-    with open("/content/drive/MyDrive/RAG/sc_sb.txt", "r") as file:
+    with open("C:/Users/Jiali Shi/OneDrive/Desktop/RAG Project Real1/pdfReader_output/My_resume.txt", "r") as file:
         file_text = file.read()
         text_lines += file_text.split("| ")
     
@@ -90,7 +90,7 @@ def emb_text(input_texts):
 #   milvus(does not support windows)
 #   pinecone(working on it)
 
-def milvus():
+def milvus_setup():
     """
     This function 
         1. create milvus database
@@ -107,6 +107,9 @@ def milvus():
         milvus_client:
         collection_name:
     """
+
+    from pymilvus import MilvusClient
+
     milvus_client = MilvusClient(uri="./rag.db")
     collection_name = "my_rag_collection"
 
@@ -131,9 +134,7 @@ def milvus():
 
     return milvus_client, collection_name
 
-
-
-def milvus_querying(question):
+def milvus_query(question):
     """
     This function query the existing database
     created by previous function milvus()
@@ -145,29 +146,89 @@ def milvus_querying(question):
         Raw text with distance
         for RAG context
     """
-    milvus_client, collection_name = milvus()
+    milvus_client, collection_name = milvus_setup()
 
     search_res = milvus_client.search(
         collection_name=collection_name,
-        data=[ emb_text(question)],  # Use the `emb_text` function to convert the question to an embedding vector
+        data=[emb_text(question)],  # Use the `emb_text` function to convert the question to an embedding vector
         limit=3,  # Return top 3 results
         search_params={"metric_type": "IP", "params": {}},  # Inner product distance
         output_fields=["text"],  # Return the text field
     )
 
     retrieved_lines_with_distances = [(res["entity"]["text"], res["distance"]) for res in search_res[0]]
-    print(json.dumps(retrieved_lines_with_distances, indent=4))
-
+    # print(json.dumps(retrieved_lines_with_distances, indent=4))
     return retrieved_lines_with_distances
 
 
+def pinecone_setup():
+    from pinecone import Pinecone, ServerlessSpec
+
+    index_name = 'gen-qa-openai-fast'
+    pc = Pinecone(api_key = os.getenv('PINECONE_API_KEY'))
+
+    cloud = os.environ.get('PINECONE_CLOUD') or 'aws'
+    region = os.environ.get('PINECONE_REGION') or 'us-east-1'
+
+    spec = ServerlessSpec(cloud=cloud, region=region)
+    
+    
+    if index_name not in pc.list_indexes().names():
+    # if does not exist, create index
+        pc.create_index(
+            index_name,
+            dimension=1536,  # dimensionality of text-embedding-ada-002
+            metric='cosine',
+            spec=spec
+        )
+    
+    index = pc.Index(index_name)
+    data = []
+
+    text_lines = read_docs()
+
+    for i, line in enumerate(tqdm(text_lines, desc="Creating embeddings")):
+        data.append({"id": i, "values": emb_text(line), "metadata": line})
+
+    index.upsert(data)
+
+    return index, data
+    
+def pinecone_query(query):
+    limit = 3750
+    import time
+
+    embedded_query  = emb_text(query)
+
+    index, data = pinecone_setup()
+
+    # get relevant contexts
+    contexts = []
+    time_waited = 0
+
+    while (len(contexts) < 3 and time_waited < 60 * 12):
+        res = index.query(vector=embedded_query, top_k=3, include_metadata=True)
+        contexts = contexts + [
+            x['metadata']for x in res['matches']
+        ]
+        print(f"Retrieved {len(contexts)} contexts, sleeping for 15 seconds...")
+        time.sleep(15)
+        time_waited += 15
+
+    if time_waited >= 60 * 12:
+        print("Timed out waiting for contexts to be retrieved.")
+        contexts = ["No contexts retrieved. Try to answer the question yourself!"]
+
+
+    return contexts
+
 
 def Ncidia_LLM_setup(question):
-    os.environ["userdata.get('NVIDIA_API_KEY')"] = os.getenv('NVIDIA_API_KEY')
+    os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
     # TODO: need to be able to change question
-    context = "\n".join([line_with_distance[0] for line_with_distance in milvus_querying(question)])
+    context = "\n".join([line_with_distance[0] for line_with_distance in milvus_query(question)])
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_AP_KEY')
+    os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
 
     client = ChatNVIDIA(
         model="databricks/dbrx-instruct",
@@ -176,6 +237,9 @@ def Ncidia_LLM_setup(question):
         top_p=1,
         max_tokens=1024,
     )
+
+    print(context)
+
     return context, client
 
 
@@ -194,6 +258,12 @@ def LLM(question):
     result = []
     for chunk in client.stream([{"role":"user", "content":USER_PROMPT}]):
         result.add(chunk.content, end="")
+
+    # print("Result: ")
+    # for i in len(result):
+    #     print(result[i])
+    #     print("______")
+
 
     return result
 
