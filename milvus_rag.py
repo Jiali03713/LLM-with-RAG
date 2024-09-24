@@ -52,14 +52,28 @@ def read_docs(): # TODO: docs can be changed based on input
 
 """### Embedding model"""
 
-# Embedding Function
-def emb_text(input_texts):
+# Embedding Function "thenlper/gte-base"
+# TODO: can be changed to other model to support
+# multilingual
+
+def emb_text(input_texts): 
+
+    """
+    This function takes the raw texts from .txt file and
+    using embedding model to embed. 
+    Using huggingface model: thenlper/gte-base
+
+    Args:
+        String input_texts: raw texts from read_docs()
+
+    Returns:
+        List Embeded texts: embedded texts
+    """
 
     def average_pool(last_hidden_states: Tensor, attention_mask: Tensor) -> Tensor:
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
     
-    input_texts = ["This is a sample text, it can also be in a list form. "]
     tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-base")
     model = AutoModel.from_pretrained("thenlper/gte-base")
     batch_dict = tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors='pt')
@@ -69,14 +83,30 @@ def emb_text(input_texts):
 
     return embeddings[0].tolist()
 
-# def testing():
-#     test_embedding = emb_text("This is a test")
-#     embedding_dim = len(test_embedding)
 
-"""### Create Milvus Collection"""
+# The following function is used to create databases
+# this should be able to be replaced by other databases
+# Current option: 
+#   milvus(does not support windows)
+#   pinecone(working on it)
 
-# If collection already existed, delete it and recreate
 def milvus():
+    """
+    This function 
+        1. create milvus database
+        2. Embed each line of raw text using embedding model
+        3. add embedded line to database
+    
+    If database need to be changed, change next function:
+    milvus_querying()
+
+    Args:
+        None
+
+    Returns:
+        milvus_client:
+        collection_name:
+    """
     milvus_client = MilvusClient(uri="./rag.db")
     collection_name = "my_rag_collection"
 
@@ -98,12 +128,23 @@ def milvus():
         data.append({"id": i, "vector": emb_text(line), "text": line})
 
     milvus_client.insert(collection_name=collection_name, data=data)
+
     return milvus_client, collection_name
 
-    
-"""### Testing"""
+
 
 def milvus_querying(question):
+    """
+    This function query the existing database
+    created by previous function milvus()
+
+    Args:
+        Raw text of query question
+
+    Returns:
+        Raw text with distance
+        for RAG context
+    """
     milvus_client, collection_name = milvus()
 
     search_res = milvus_client.search(
@@ -119,10 +160,9 @@ def milvus_querying(question):
 
     return retrieved_lines_with_distances
 
-"""### Setup LLM
 
-"""
-def intergrate_LLM(question):
+
+def Ncidia_LLM_setup(question):
     os.environ["userdata.get('NVIDIA_API_KEY')"] = os.getenv('NVIDIA_API_KEY')
     # TODO: need to be able to change question
     context = "\n".join([line_with_distance[0] for line_with_distance in milvus_querying(question)])
@@ -138,8 +178,9 @@ def intergrate_LLM(question):
     )
     return context, client
 
+
 def LLM(question):
-    context, client = intergrate_LLM(question)
+    context, client = Ncidia_LLM_setup(question)
 
     SYSTEM_PROMPT = """
                     Human: You are an AI assistant. You are able to find answers to the questions from the contextual passage snippets provided.
@@ -157,11 +198,10 @@ def LLM(question):
     return result
 
 
-
 if __name__ == "__main__":
     #testing, can comment out later
-    print("START TESTING: ")
-    milvus_querying("Hallo")
+
+    # TODO: prompt user to enter txt file path
 
     question = input("Enter the question: ")
     result = LLM(question)

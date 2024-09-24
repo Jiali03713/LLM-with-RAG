@@ -9,7 +9,6 @@ def save_text_to_file(text, file_name):
     with open(file_name + ".txt", 'w', encoding='utf-8') as file:
         file.write(text)
 
-
 # Extract text with PyPDF2
 # Not used, using pdfPlumber
 def extract_text_pypdf2(pdf_path):
