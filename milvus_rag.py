@@ -44,7 +44,7 @@ def read_docs(): # TODO: docs can be changed based on input
     #     with open(file_path, "r") as file:
     #         file_text = file.read()
 
-    with open("C:/Users/Jiali Shi/OneDrive/Desktop/RAG Project Real1/pdfReader_output/My_resume.txt", "r") as file:
+    with open("My_resume.txt", "r") as file:
         file_text = file.read()
         text_lines += file_text.split("| ")
     
@@ -111,16 +111,17 @@ def milvus_setup():
     from pymilvus import MilvusClient
 
     milvus_client = MilvusClient(uri="./rag.db")
-    collection_name = "my_rag_collection"
+    collection_name = "pdf_collection"
 
     if milvus_client.has_collection(collection_name):
         milvus_client.drop_collection(collection_name)
 
     milvus_client.create_collection(
         collection_name=collection_name,
-        dimension=512,
+        dimension=768,
         metric_type="IP",  # Inner product distance
         consistency_level="Strong",  # Strong consistency level
+	params = {'efConstruction': 40, 'M': 1024}
     )
 
     data = []
@@ -157,8 +158,8 @@ def milvus_query(question):
     )
 
     retrieved_lines_with_distances = [(res["entity"]["text"], res["distance"]) for res in search_res[0]]
-    # print(json.dumps(retrieved_lines_with_distances, indent=4))
-    return retrieved_lines_with_distances
+    #print(json.dumps(retrieved_lines_with_distances, indent=4))
+    return retrieved_lines_with_distances[:1]
 
 
 def pinecone_setup():
@@ -238,7 +239,7 @@ def Ncidia_LLM_setup(question):
         max_tokens=1024,
     )
 
-    print(context)
+    #print(os.getenv('NVIDIA_API_KEY')) #print(context)
 
     return context, client
 
@@ -257,7 +258,7 @@ def LLM(question):
 
     result = []
     for chunk in client.stream([{"role":"user", "content":USER_PROMPT}]):
-        result.add(chunk.content, end="")
+        print(chunk.content, end="")
 
     # print("Result: ")
     # for i in len(result):
