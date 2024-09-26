@@ -13,7 +13,8 @@ Original file is located at
 # !wget https://github.com/milvus-io/milvus-docs/releases/download/v2.4.6-preview/milvus_docs_2.4.x_en.zip
 # !unzip -q milvus_docs_2.4.x_en.zip -d milvus_docs
 # !cp -r /content/milvus_docs /content/drive/MyDrive/RAG
-
+from torch.cuda.amp import autocast
+import torch
 from glob import glob
 import getpass
 import os
@@ -44,11 +45,14 @@ def read_docs(): # TODO: docs can be changed based on input
     #     with open(file_path, "r") as file:
     #         file_text = file.read()
 
-    with open("My_resume.txt", "r") as file:
-        file_text = file.read()
-        text_lines += file_text.split("| ")
+    #with open("My_resume.txt", "r") as file:
+    #   file_text = file.read()
+    #   text_lines += file_text.split("| ")
+    with open("the-great-gatsby.txt", "r") as file:
+        lines = file.readlines()  # Reads all lines into a list
+    return [line.strip() for line in lines]  # Strip newline characters
     
-    return text_lines
+    #return text_lines
 
 """### Embedding model"""
 
@@ -57,7 +61,7 @@ def read_docs(): # TODO: docs can be changed based on input
 # multilingual
 
 def emb_text(input_texts): 
-
+    #input_texts = input_texts.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     """
     This function takes the raw texts from .txt file and
     using embedding model to embed. 
@@ -73,13 +77,22 @@ def emb_text(input_texts):
     def average_pool(last_hidden_states: Tensor, attention_mask: Tensor) -> Tensor:
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
-    
+
     tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-base")
     model = AutoModel.from_pretrained("thenlper/gte-base")
+
+    # move model to CUDA when available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    #print(f"Model is on: {next(model.parameters()).device}")
+
     batch_dict = tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors='pt')
 
-    outputs = model(**batch_dict)
-    embeddings = average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
+    batch_dict = {key: value.to("cuda") for key, value in batch_dict.items()}
+
+    with autocast():
+    	outputs = model(**batch_dict)
+    	embeddings = average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
 
     return embeddings[0].tolist()
 
@@ -95,8 +108,7 @@ def milvus_setup():
     This function 
         1. create milvus database
         2. Embed each line of raw text using embedding model
-        3. add embedded line to database
-    
+        3. add embedded line to database    
     If database need to be changed, change next function:
     milvus_querying()
 
@@ -111,7 +123,7 @@ def milvus_setup():
     from pymilvus import MilvusClient
 
     milvus_client = MilvusClient(uri="./rag.db")
-    collection_name = "pdf_collection"
+    collection_name = "one_hundred_collection"
 
     if milvus_client.has_collection(collection_name):
         milvus_client.drop_collection(collection_name)
@@ -147,7 +159,15 @@ def milvus_query(question):
         Raw text with distance
         for RAG context
     """
-    milvus_client, collection_name = milvus_setup()
+
+    """ Create new embedding"""
+    #milvus_client, collection_name = milvus_setup()
+
+    """ When dont want to embedding again"""
+    from pymilvus import MilvusClient
+    milvus_client = MilvusClient(uri="./rag.db")
+    collection_name = "pdf_collection"
+
 
     search_res = milvus_client.search(
         collection_name=collection_name,
