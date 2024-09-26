@@ -1,3 +1,5 @@
-venv/
+myvenv/
 free_thought.txt
 pdfReader_output/
+pdf.txt
+rag.db
