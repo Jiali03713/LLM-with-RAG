@@ -5,37 +5,41 @@ from tkinter.filedialog import askopenfilename
 from contextlib import contextmanager
 import pdfplumber
 
-def save_text_to_file(text, file_name):
-    with open(file_name + ".txt", 'w', encoding='utf-8') as file:
-        file.write(text)
+def save_text_to_file(texts, file_name):
+    if os.path.exists(file_name + ".txt"):
+        os.remove(file_name + ".txt")
+
+    with open(file_name + ".txt", 'a', encoding='utf-8') as file:
+        for text in texts:
+            file.write(text + "\n")
 
 # Extract text with PyPDF2
 # Not used, using pdfPlumber
-def extract_text_pypdf2(pdf_path):
-    output_folder = "pdfReader_output"
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+# def extract_text_pypdf2(pdf_path):
+    # output_folder = "pdfReader_output"
+    # if not os.path.exists(output_folder):
+    #     os.makedirs(output_folder)
 
-    try:
-        with open(pdf_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            text = ""
-            for page in reader.pages:
-                text += page.extract_text()
+    # try:
+    #     with open(pdf_path, 'rb') as file:
+    #         reader = PyPDF2.PdfReader(file)
+    #         text = ""
+    #         for page in reader.pages:
+    #             text += page.extract_text()
 
-    except FileNotFoundError as e:
-        print(f"File not found: {e}")
-        return None
+    # except FileNotFoundError as e:
+    #     print(f"File not found: {e}")
+    #     return None
     
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")
+    #     return None
 
-    file_name = os.path.splitext(os.path.basename(pdf_path))[0]
-    save_text_to_file(text, os.path.join(output_folder, file_name))
+    # file_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    # save_text_to_file(text, os.path.join(output_folder, file_name))
     
-    print(f"Text successfully extracted and saved to {os.path.join(output_folder, file_name)}.txt")
-    return text
+    # print(f"Text successfully extracted and saved to {os.path.join(output_folder, file_name)}.txt")
+    # return text
 
 # Extract text with pdfPlumber
 def extract_text_pdfplumber(pdf_path):
@@ -58,7 +62,8 @@ def extract_text_pdfplumber(pdf_path):
         return None
 
     file_name = os.path.splitext(os.path.basename(pdf_path))[0]
-    save_text_to_file(text, os.path.join(output_folder, file_name))
+    text_list = text.split(".")
+    save_text_to_file(text_list, os.path.join(output_folder, file_name))
     
     print(f"Text successfully extracted and saved to {os.path.join(output_folder, file_name)}.txt")
     return text
@@ -84,3 +89,4 @@ def select_pdf():
 
 if __name__ == "__main__":
     select_pdf()
+
