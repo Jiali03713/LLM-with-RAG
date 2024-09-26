@@ -18,8 +18,6 @@ import torch
 from glob import glob
 import getpass
 import os
-# from google.colab import userdata
-# from posix import device_encoding
 import getpass
 import os
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
@@ -28,8 +26,6 @@ from torch import Tensor
 from transformers import AutoTokenizer, AutoModel
 import getpass
 import os
-# from google.colab import userdata
-# from posix import device_encoding
 import getpass
 import os
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
@@ -48,7 +44,7 @@ def read_docs(): # TODO: docs can be changed based on input
     #with open("My_resume.txt", "r") as file:
     #   file_text = file.read()
     #   text_lines += file_text.split("| ")
-    with open("the-great-gatsby.txt", "r") as file:
+    with open("pdf.txt", "r") as file:
         lines = file.readlines()  # Reads all lines into a list
     return [line.strip() for line in lines]  # Strip newline characters
     
@@ -102,6 +98,13 @@ def emb_text(input_texts):
 # Current option: 
 #   milvus(does not support windows)
 #   pinecone(working on it)
+def emb_text_batch(lines):
+    # This should contain the logic to get embeddings for a batch of lines
+    with torch.no_grad():
+        embeddings = emb_text(lines)
+    return embeddings
+
+
 
 def milvus_setup():
     """
@@ -137,11 +140,18 @@ def milvus_setup():
     )
 
     data = []
+    batch_size = 128
 
     text_lines = read_docs()
 
-    for i, line in enumerate(tqdm(text_lines, desc="Creating embeddings")):
-        data.append({"id": i, "vector": emb_text(line), "text": line})
+    #for i, line in enumerate(tqdm(text_lines, desc="Creating embeddings")):
+        #data.append({"id": i, "vector": emb_text(line), "text": line})
+    for i in tqdm(range(0, len(text_lines), batch_size), desc="Creating embeddings"):
+        batch_lines = text_lines[i:i + batch_size]  # Get a batch of lines
+        embeddings = emb_text_batch(batch_lines)  # Get embeddings for the batch
+        for j, line in enumerate(batch_lines):
+            data.append({"id": i + j, "vector": embeddings, "text": line})
+
 
     milvus_client.insert(collection_name=collection_name, data=data)
 
@@ -161,12 +171,12 @@ def milvus_query(question):
     """
 
     """ Create new embedding"""
-    #milvus_client, collection_name = milvus_setup()
+    milvus_client, collection_name = milvus_setup()
 
     """ When dont want to embedding again"""
-    from pymilvus import MilvusClient
-    milvus_client = MilvusClient(uri="./rag.db")
-    collection_name = "pdf_collection"
+    #from pymilvus import MilvusClient
+    #milvus_client = MilvusClient(uri="./rag.db")
+    #collection_name = "pdf_collection"
 
 
     search_res = milvus_client.search(
