@@ -104,8 +104,8 @@ class RAG():
         milvus_client = MilvusClient(uri=self.client_name)
         collection_name = self.collection_name
 
-        if milvus_client.has_collection(collection_name):
-            milvus_client.drop_collection(collection_name)
+        # if milvus_client.has_collection(collection_name):
+        #     milvus_client.drop_collection(collection_name)
 
         milvus_client.create_collection(
             collection_name=collection_name,
@@ -232,7 +232,7 @@ class LLM:
     def __init__(self, returned_vectors) -> None:
         self.returned_vectors = returned_vectors
     
-    def Ncidia_LLM_setup(self):
+    def Nvidia_LLM_setup(self):
         os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
         # TODO: need to be able to change question
 
@@ -276,7 +276,7 @@ def call_func(file_path, question):
     reader = txt_reader(file_path=file_path)
     raw_text = reader.read_docs()
 
-    gte = RAG(raw_text=raw_text, query=question, client_name="./rag.db", collection_name = "one_hundred_collection", batch_size = 128)
+    gte = RAG(raw_text=raw_text, query=question)
     returned_vector = gte.milvus_query()
 
     llm = LLM(returned_vectors=returned_vector)
