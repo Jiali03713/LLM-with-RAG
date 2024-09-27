@@ -1,7 +1,6 @@
-# Stage One
-1. Web crawling python File 
-2. RAG File
-3. OCR File
+# Stage One (Current)
+1. RAG File
+2. pdf_to_txt File
    
 # Stage Two
 1. Improve Web Crawling file
