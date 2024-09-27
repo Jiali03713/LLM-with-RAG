@@ -36,7 +36,7 @@ class txt_reader:
     # multilingual
 
 class RAG():
-    def __init__(self, raw_text, query, client_name = "./rag.db", collection_name = "one_hundred_collection"):
+    def __init__(self, raw_text, query):
         self.raw_text = raw_text
         self.question = query
         self.client_name = "./rag.db"
@@ -231,9 +231,6 @@ class RAG():
 class LLM:
     def __init__(self, returned_vectors) -> None:
         self.returned_vectors = returned_vectors
-        
-
-
     
     def Ncidia_LLM_setup(self):
         os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
@@ -274,15 +271,16 @@ class LLM:
 
         return result
 
-def call_func(file_path, milvus_client, collection_name, batch_size, question):
-    reader = txt_reader
-    raw_text = reader.read_docs(file_path)
+# def call_func(file_path, milvus_client, collection_name, batch_size, question):
+def call_func(file_path, question):
+    reader = txt_reader(file_path=file_path)
+    raw_text = reader.read_docs()
 
     gte = RAG(raw_text=raw_text, query=question, client_name="./rag.db", collection_name = "one_hundred_collection", batch_size = 128)
     returned_vector = gte.milvus_query()
 
     llm = LLM(returned_vectors=returned_vector)
-    print(llm.LLM)
+    return llm.LLM()
 
 
 
@@ -290,15 +288,16 @@ def call_func(file_path, milvus_client, collection_name, batch_size, question):
 
 
 if __name__ == "__main__":
-    # TODO: prompt user to enter txt file path
     file_path = input("Enter the absolute file path of your txt file: ")
-    milvus_client = input("Enter the milvus client name: ")
-    collection_name = input("Enter the milvus collection name: ")
 
-    batch_size = input("Enter the batch size for text embedding: ")
+    """Not yet"""
+    # milvus_client = input("Enter the milvus client name: ")
+    # collection_name = input("Enter the milvus collection name: ")
+    # batch_size = input("Enter the batch size for text embedding: ")
+
     question = input("Enter the question: ")
 
-    call_func(file_path, milvus_client, collection_name, batch_size, question)
+    print(call_func(file_path, question))
     # TODO: finish orginizing code and include flexibility of parameters
     # TODO: finish call_func
     # TODO: modify OCR?py
