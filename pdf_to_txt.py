@@ -51,7 +51,7 @@ def extract_text_pdfplumber(pdf_path):
         with pdfplumber.open(pdf_path) as pdf:
             text = ''
             for page in pdf.pages:
-                text += page.extract_text()
+                text += page.extract_text() + " "
 
     except FileNotFoundError as e:
         print(f"File not found: {e}")
@@ -63,6 +63,7 @@ def extract_text_pdfplumber(pdf_path):
 
     file_name = os.path.splitext(os.path.basename(pdf_path))[0]
     text_list = text.split(".")
+    print(text_list)
     save_text_to_file(text_list, os.path.join(output_folder, file_name))
     
     print(f"Text successfully extracted and saved to {os.path.join(output_folder, file_name)}.txt")
