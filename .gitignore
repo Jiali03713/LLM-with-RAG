@@ -3,6 +3,6 @@ free_thought.txt
 pdfReader_output/
 pdf.txt
 rag.db
-_pycache_/
+__pycache__/
 .vscode/
 sample_text/
