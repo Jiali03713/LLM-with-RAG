@@ -36,7 +36,7 @@ class txt_reader:
     # multilingual
 
 class RAG():
-    def __init__(self, raw_text, query, client_name = "./rag.db", collection_name = "one_hundred_collection"):
+    def __init__(self, raw_text, query):
         self.raw_text = raw_text
         self.question = query
         self.client_name = "./rag.db"
@@ -103,31 +103,31 @@ class RAG():
 
         milvus_client = MilvusClient(uri=self.client_name)
         collection_name = self.collection_name
-
         if milvus_client.has_collection(collection_name):
-            milvus_client.drop_collection(collection_name)
+            # milvus_client.drop_collection(collection_name)
+            milvus_client = milvus_client
+        else:
+            milvus_client.create_collection(
+                collection_name=collection_name,
+                dimension=768,
+                metric_type="IP",  # Inner product distance
+                consistency_level="Strong",  # Strong consistency level
+       	        params = {'efConstruction': 40, 'M': 1024}
+       	    )
 
-        milvus_client.create_collection(
-            collection_name=collection_name,
-            dimension=768,
-            metric_type="IP",  # Inner product distance
-            consistency_level="Strong",  # Strong consistency level
-        params = {'efConstruction': 40, 'M': 1024}
-        )
+            data = []
+            batch_size = 128
 
-        data = []
-        batch_size = 128
+            text_lines = self.raw_text
 
-        text_lines = self.raw_text
-
-        for i in tqdm(range(0, len(text_lines), batch_size), desc="Creating embeddings"):
-            batch_lines = text_lines[i:i + batch_size]  # Get a batch of lines
-            embeddings = self.emb_text_batch(batch_lines)  # Get embeddings for the batch
-            for j, line in enumerate(batch_lines):
-                data.append({"id": i + j, "vector": embeddings, "text": line})
+            for i in tqdm(range(0, len(text_lines), batch_size), desc="Creating embeddings"):
+                batch_lines = text_lines[i:i + batch_size]  # Get a batch of lines
+                embeddings = self.emb_text_batch(batch_lines)  # Get embeddings for the batch
+                for j, line in enumerate(batch_lines):
+                    data.append({"id": i + j, "vector": embeddings, "text": line})
 
 
-        milvus_client.insert(collection_name=collection_name, data=data)
+            milvus_client.insert(collection_name=collection_name, data=data)
 
         return milvus_client, collection_name
 
@@ -156,14 +156,14 @@ class RAG():
         search_res = milvus_client.search(
             collection_name=collection_name,
             data=[self.emb_text(self.question)],  # Use the `emb_text` function to convert the question to an embedding vector
-            limit=3,  # Return top 3 results
+            limit=64,  # Return top 3 results
             search_params={"metric_type": "IP", "params": {}},  # Inner product distance
             output_fields=["text"],  # Return the text field
         )
 
         retrieved_lines_with_distances = [(res["entity"]["text"], res["distance"]) for res in search_res[0]]
         #print(json.dumps(retrieved_lines_with_distances, indent=4))
-        return retrieved_lines_with_distances[:1]
+        return retrieved_lines_with_distances
 
 
     def pinecone_setup():
@@ -231,11 +231,8 @@ class RAG():
 class LLM:
     def __init__(self, returned_vectors) -> None:
         self.returned_vectors = returned_vectors
-        
-
-
     
-    def Ncidia_LLM_setup(self):
+    def Nvidia_LLM_setup(self):
         os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
         # TODO: need to be able to change question
 
@@ -274,15 +271,16 @@ class LLM:
 
         return result
 
-def call_func(file_path, milvus_client, collection_name, batch_size, question):
-    reader = txt_reader
-    raw_text = reader.read_docs(file_path)
+# def call_func(file_path, milvus_client, collection_name, batch_size, question):
+def call_func(file_path, question):
+    reader = txt_reader(file_path=file_path)
+    raw_text = reader.read_docs()
 
-    gte = RAG(raw_text=raw_text, query=question, client_name="./rag.db", collection_name = "one_hundred_collection", batch_size = 128)
+    gte = RAG(raw_text=raw_text, query=question)
     returned_vector = gte.milvus_query()
 
     llm = LLM(returned_vectors=returned_vector)
-    print(llm.LLM)
+    return llm.LLM()
 
 
 
@@ -290,15 +288,16 @@ def call_func(file_path, milvus_client, collection_name, batch_size, question):
 
 
 if __name__ == "__main__":
-    # TODO: prompt user to enter txt file path
     file_path = input("Enter the absolute file path of your txt file: ")
-    milvus_client = input("Enter the milvus client name: ")
-    collection_name = input("Enter the milvus collection name: ")
 
-    batch_size = input("Enter the batch size for text embedding: ")
+    """Not yet"""
+    # milvus_client = input("Enter the milvus client name: ")
+    # collection_name = input("Enter the milvus collection name: ")
+    # batch_size = input("Enter the batch size for text embedding: ")
+
     question = input("Enter the question: ")
 
-    call_func(file_path, milvus_client, collection_name, batch_size, question)
+    print(call_func(file_path, question))
     # TODO: finish orginizing code and include flexibility of parameters
     # TODO: finish call_func
     # TODO: modify OCR?py
