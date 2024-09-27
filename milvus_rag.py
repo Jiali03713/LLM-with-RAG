@@ -163,7 +163,7 @@ class RAG():
 
         retrieved_lines_with_distances = [(res["entity"]["text"], res["distance"]) for res in search_res[0]]
         #print(json.dumps(retrieved_lines_with_distances, indent=4))
-        return retrieved_lines_with_distances[:1]
+        return retrieved_lines_with_distances
 
 
     def pinecone_setup():
@@ -233,12 +233,12 @@ class LLM:
         self.returned_vectors = returned_vectors
     
     def Nvidia_LLM_setup(self):
-        os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
+        # os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
         # TODO: need to be able to change question
 
         context = "\n".join([line_with_distance[0] for line_with_distance in self.returned_vectors])
-        os.environ["LANGCHAIN_TRACING_V2"] = "true"
-        os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
+        # os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        # os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
 
         client = ChatNVIDIA(
             model="databricks/dbrx-instruct",
@@ -247,8 +247,6 @@ class LLM:
             top_p=1,
             max_tokens=1024,
         )
-
-        #print(os.getenv('NVIDIA_API_KEY')) #print(context)
 
         return context, client
 
