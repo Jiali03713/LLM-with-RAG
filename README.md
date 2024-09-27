@@ -1,9 +1,11 @@
 # Stage One (Current)
 1. RAG File
-   Large Language Model: "databricks/dbrx-instruct": https://huggingface.co/databricks/dbrx-instruct
-                        Nvidia Client: https://build.nvidia.com/databricks/dbrx-instruct
-   Vector Database: Milvus: https://milvus.io/
-                        Embedding model: https://huggingface.co/thenlper/gte-base
+   - Large Language Model:
+     -  "databricks/dbrx-instruct": https://huggingface.co/databricks/dbrx-instruct 
+     - Nvidia Client: https://build.nvidia.com/databricks/dbrx-instruct
+   - Vector Database:
+     - Milvus: https://milvus.io/
+     - Embedding model: https://huggingface.co/thenlper/gte-base
 3. pdf_to_txt File
    
 # Stage Two
