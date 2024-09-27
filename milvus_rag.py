@@ -35,8 +35,15 @@ class txt_reader:
     # TODO: can be changed to other model to support
     # multilingual
 
-class RAG:
-    def emb_text(input_texts): 
+class RAG():
+    def __init__(self, raw_text, query, client_name = "./rag.db", collection_name = "one_hundred_collection"):
+        self.raw_text = raw_text
+        self.question = query
+        self.client_name = "./rag.db"
+        self.collection_name = "one_hundred_collection"
+
+
+    def emb_text(self, input_texts): 
         """
         This function takes the raw texts from .txt file and        
         using embedding model to embed. 
@@ -70,12 +77,12 @@ class RAG:
 
         return embeddings[0].tolist()
 
-    def emb_text_batch(lines):
+    def emb_text_batch(self, lines):
         with torch.no_grad():
-            embeddings = emb_text(lines)
+            embeddings = self.emb_text(lines)
         return embeddings
 
-    def milvus_setup():
+    def milvus_setup(self):
         """
         This function 
             1. create milvus database
@@ -94,8 +101,8 @@ class RAG:
 
         from pymilvus import MilvusClient
 
-        milvus_client = MilvusClient(uri="./rag.db")
-        collection_name = "one_hundred_collection"
+        milvus_client = MilvusClient(uri=self.client_name)
+        collection_name = self.collection_name
 
         if milvus_client.has_collection(collection_name):
             milvus_client.drop_collection(collection_name)
@@ -111,11 +118,11 @@ class RAG:
         data = []
         batch_size = 128
 
-        text_lines = read_docs()
+        text_lines = self.raw_text
 
         for i in tqdm(range(0, len(text_lines), batch_size), desc="Creating embeddings"):
             batch_lines = text_lines[i:i + batch_size]  # Get a batch of lines
-            embeddings = emb_text_batch(batch_lines)  # Get embeddings for the batch
+            embeddings = self.emb_text_batch(batch_lines)  # Get embeddings for the batch
             for j, line in enumerate(batch_lines):
                 data.append({"id": i + j, "vector": embeddings, "text": line})
 
@@ -124,7 +131,7 @@ class RAG:
 
         return milvus_client, collection_name
 
-    def milvus_query(question):
+    def milvus_query(self):
         """
         This function query the existing database
         created by previous function milvus()
@@ -138,7 +145,7 @@ class RAG:
         """
 
         """ Create new embedding"""
-        milvus_client, collection_name = milvus_setup()
+        milvus_client, collection_name = self.milvus_setup()
 
         """ When dont want to embedding again"""
         #from pymilvus import MilvusClient
@@ -148,7 +155,7 @@ class RAG:
 
         search_res = milvus_client.search(
             collection_name=collection_name,
-            data=[emb_text(question)],  # Use the `emb_text` function to convert the question to an embedding vector
+            data=[self.emb_text(self.question)],  # Use the `emb_text` function to convert the question to an embedding vector
             limit=3,  # Return top 3 results
             search_params={"metric_type": "IP", "params": {}},  # Inner product distance
             output_fields=["text"],  # Return the text field
@@ -221,50 +228,65 @@ class RAG:
         return contexts
 
 
-def Ncidia_LLM_setup(question):
-    os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
-    # TODO: need to be able to change question
-    context = "\n".join([line_with_distance[0] for line_with_distance in milvus_query(question)])
-    os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
-
-    client = ChatNVIDIA(
-        model="databricks/dbrx-instruct",
-        api_key = os.getenv('NVIDIA_API_KEY'),
-        temperature=0.5,
-        top_p=1,
-        max_tokens=1024,
-    )
-
-    #print(os.getenv('NVIDIA_API_KEY')) #print(context)
-
-    return context, client
+class LLM:
+    def __init__(self, returned_vectors) -> None:
+        self.returned_vectors = returned_vectors
+        
 
 
-def LLM(question):
-    context, client = Ncidia_LLM_setup(question)
+    
+    def Ncidia_LLM_setup(self):
+        os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
+        # TODO: need to be able to change question
 
-    SYSTEM_PROMPT = """
-                    Human: You are an AI assistant. You are able to find answers to the questions from the contextual passage snippets provided.
-                    """
-    USER_PROMPT = f"""
-                    Use the following pieces of information enclosed in <context> tags to provide an answer to the question enclosed in <question> tags.
-                    <context>{context}</context>
-                    <question>{question}</question>
-                    """
+        context = "\n".join([line_with_distance[0] for line_with_distance in self.returned_vectors])
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
 
-    result = []
-    for chunk in client.stream([{"role":"user", "content":USER_PROMPT}]):
-        print(chunk.content, end="")
+        client = ChatNVIDIA(
+            model="databricks/dbrx-instruct",
+            api_key = os.getenv('NVIDIA_API_KEY'),
+            temperature=0.5,
+            top_p=1,
+            max_tokens=1024,
+        )
 
-    return result
+        #print(os.getenv('NVIDIA_API_KEY')) #print(context)
 
-def call_func(file_path, milvus_client, collection_name, batch_size):
+        return context, client
+
+
+    def LLM(self):
+        context, client = self.Nvidia_LLM_setup()
+
+        SYSTEM_PROMPT = """
+                        Human: You are an AI assistant. You are able to find answers to the questions from the contextual passage snippets provided.
+                        """
+        USER_PROMPT = f"""
+                        Use the following pieces of information enclosed in <context> tags to provide an answer to the question enclosed in <question> tags.
+                        <context>{context}</context>
+                        <question>{question}</question>
+                        """
+
+        result = []
+        for chunk in client.stream([{"role":"user", "content":USER_PROMPT}]):
+            print(chunk.content, end="")
+
+        return result
+
+def call_func(file_path, milvus_client, collection_name, batch_size, question):
     reader = txt_reader
     raw_text = reader.read_docs(file_path)
 
-    gte = RAG
-    gte.milvus_query()
+    gte = RAG(raw_text=raw_text, query=question, client_name="./rag.db", collection_name = "one_hundred_collection", batch_size = 128)
+    returned_vector = gte.milvus_query()
+
+    llm = LLM(returned_vectors=returned_vector)
+    print(llm.LLM)
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -276,6 +298,7 @@ if __name__ == "__main__":
     batch_size = input("Enter the batch size for text embedding: ")
     question = input("Enter the question: ")
 
-    call_func(file_path, milvus_client, collection_name, batch_size)
+    call_func(file_path, milvus_client, collection_name, batch_size, question)
     # TODO: finish orginizing code and include flexibility of parameters
     # TODO: finish call_func
+    # TODO: modify OCR?py
