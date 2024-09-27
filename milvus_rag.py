@@ -104,30 +104,31 @@ class RAG():
         milvus_client = MilvusClient(uri=self.client_name)
         collection_name = self.collection_name
 
-        # if milvus_client.has_collection(collection_name):
-        #     milvus_client.drop_collection(collection_name)
+        if milvus_client.has_collection(collection_name):
+            # milvus_client.drop_collection(collection_name)
+            milvus_client = milvus_client
+        else:
+            milvus_client.create_collection(
+                collection_name=collection_name,
+                dimension=768,
+                metric_type="IP",  # Inner product distance
+                consistency_level="Strong",  # Strong consistency level
+       	        params = {'efConstruction': 40, 'M': 1024}
+       	    )
 
-        milvus_client.create_collection(
-            collection_name=collection_name,
-            dimension=768,
-            metric_type="IP",  # Inner product distance
-            consistency_level="Strong",  # Strong consistency level
-        params = {'efConstruction': 40, 'M': 1024}
-        )
+            data = []
+            batch_size = 128
 
-        data = []
-        batch_size = 128
+            text_lines = self.raw_text
 
-        text_lines = self.raw_text
-
-        for i in tqdm(range(0, len(text_lines), batch_size), desc="Creating embeddings"):
-            batch_lines = text_lines[i:i + batch_size]  # Get a batch of lines
-            embeddings = self.emb_text_batch(batch_lines)  # Get embeddings for the batch
-            for j, line in enumerate(batch_lines):
-                data.append({"id": i + j, "vector": embeddings, "text": line})
+            for i in tqdm(range(0, len(text_lines), batch_size), desc="Creating embeddings"):
+                batch_lines = text_lines[i:i + batch_size]  # Get a batch of lines
+                embeddings = self.emb_text_batch(batch_lines)  # Get embeddings for the batch
+                for j, line in enumerate(batch_lines):
+                    data.append({"id": i + j, "vector": embeddings, "text": line})
 
 
-        milvus_client.insert(collection_name=collection_name, data=data)
+            milvus_client.insert(collection_name=collection_name, data=data)
 
         return milvus_client, collection_name
 
@@ -156,7 +157,7 @@ class RAG():
         search_res = milvus_client.search(
             collection_name=collection_name,
             data=[self.emb_text(self.question)],  # Use the `emb_text` function to convert the question to an embedding vector
-            limit=3,  # Return top 3 results
+            limit=64,  # Return top 3 results
             search_params={"metric_type": "IP", "params": {}},  # Inner product distance
             output_fields=["text"],  # Return the text field
         )

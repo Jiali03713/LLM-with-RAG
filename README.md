@@ -1,7 +1,18 @@
-# Stage One
-1. Web crawling python File 
-2. RAG File
-3. OCR File
+# Stage One (Current)
+1. RAG File
+   - Large Language Model:
+     - Language Model: "databricks/dbrx-instruct": https://huggingface.co/databricks/dbrx-instruct 
+     - Nvidia Client: https://build.nvidia.com/databricks/dbrx-instruct
+   - Vector Database:
+     - Milvus: https://milvus.io/
+     - Embedding model: https://huggingface.co/thenlper/gte-base
+     - Support OS: Linux
+       - Currently Does not support Windows OS because Milvus_lite does not support Windows OS
+       - Will choose different database in the future in order to fix this issue
+3. pdf_to_txt File
+   - Current Handle:
+     - pdf(text) to txt
+     - Need to improve preprocessing inorder to feed to RAG model
    
 # Stage Two
 1. Improve Web Crawling file
