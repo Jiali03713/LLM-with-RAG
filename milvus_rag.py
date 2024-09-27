@@ -103,6 +103,7 @@ class RAG():
 
         milvus_client = MilvusClient(uri=self.client_name)
         collection_name = self.collection_name
+
         if milvus_client.has_collection(collection_name):
             # milvus_client.drop_collection(collection_name)
             milvus_client = milvus_client
