@@ -1,10 +1,8 @@
-import PyPDF2
 import os
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from contextlib import contextmanager
 import pdfplumber
-import mimetypes
 
 def save_text_to_file(texts, file_name):
     if os.path.exists(file_name + ".txt"):
@@ -13,6 +11,8 @@ def save_text_to_file(texts, file_name):
     with open(file_name + ".txt", 'a', encoding='utf-8') as file:
         for text in texts:
             file.write(text + "\n")
+
+    return file_name + ".txt"
 
 
 # Extract text with pdfPlumber
@@ -45,8 +45,8 @@ def extract_text_pdfplumber(pdf_path):
 
     save_text_to_file(text_list, os.path.join(output_folder, file_name))
     print(f"Text successfully extracted and saved to {os.path.join(output_folder, file_name)}.txt")
-
-    return text
+    output_path = os.path.join(output_folder, file_name) + ".txt"
+    return output_path
 
 
 @contextmanager
@@ -63,15 +63,22 @@ def select_pdf():
         pdf_file = askopenfilename(title="Select PDF file", filetypes=[("PDF files", "*.pdf")])
 
         if pdf_file:
-            extract_text_pdfplumber(pdf_file)
+            output_path = extract_text_pdfplumber(pdf_file)
+            return output_path
         else:
             print("No file selected or invalid file.")
+        
 
-if __name__ == "__main__":
-    import sys;
-
+def run():
     if os.getenv("$DISPLAY") is not None:
-        select_pdf()
+        output_path = select_pdf()
+        return output_path
+
     else:
         file_path = input("Enter the path of your pdf file: ")
-        extract_text_pdfplumber(file_path)
+        output_path = extract_text_pdfplumber(file_path)
+        return output_path
+
+if __name__ == "__main__":
+    output_path = run()
+    print(output_path)
