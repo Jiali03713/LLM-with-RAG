@@ -279,8 +279,8 @@ def run(file_path):
     gte = RAG(raw_text=raw_text, query=question)
     returned_vector = gte.milvus_query()
 
-    llm = LLM(returned_vectors=returned_vector, question=question)
-    return llm.LLM()
+    llm = LLM(returned_vectors=returned_vector)
+    return llm.LLM(question)
 
 
 
