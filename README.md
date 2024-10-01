@@ -13,6 +13,8 @@
    - Current Handle:
      - pdf(text) to txt
      - Need to improve preprocessing inorder to feed to RAG model
+4. Progress(10/01/2024):
+  - Simplified version works on Linux, with one query ability
    
 # Stage Two
 1. Improve Web Crawling file
