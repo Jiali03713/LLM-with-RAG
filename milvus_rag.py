@@ -27,7 +27,7 @@ class txt_reader:
         self.file_path = file_path
 
     def read_docs(self): # TODO: docs can be changed based on input
-        with open(self.file_path, "r") as file:
+        with open(self.file_path, "r", encoding = 'utf-8') as file:
             lines = file.readlines()
         return [line.strip() for line in lines]
         
@@ -271,10 +271,11 @@ class LLM:
         return result
 
 # def call_func(file_path, milvus_client, collection_name, batch_size, question):
-def call_func(file_path, question):
+def run(file_path):
     reader = txt_reader(file_path=file_path)
     raw_text = reader.read_docs()
 
+    question = input("Enter the question: ")
     gte = RAG(raw_text=raw_text, query=question)
     returned_vector = gte.milvus_query()
 
@@ -294,9 +295,8 @@ if __name__ == "__main__":
     # collection_name = input("Enter the milvus collection name: ")
     # batch_size = input("Enter the batch size for text embedding: ")
 
-    question = input("Enter the question: ")
 
-    print(call_func(file_path, question))
+    print(run(file_path))
     # TODO: finish orginizing code and include flexibility of parameters
     # TODO: finish call_func
     # TODO: modify OCR?py
