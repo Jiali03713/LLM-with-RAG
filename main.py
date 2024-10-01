@@ -1,6 +1,10 @@
 import milvus_rag
-import OCR
-import Web_Crawler
+import pdf_to_txt
+
 
 if __name__ == "__main__":
-    print("Hallo World")
+    txt_path = pdf_to_txt.run()
+    question = input("Enter the question: ")
+    milvus_rag.call_func(txt_path, question)
+
+
