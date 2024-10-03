@@ -3,8 +3,9 @@ import torch.nn.functional as F
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from dotenv import load_dotenv
 
-import LLM
-import RAG
+from LLM import LLM
+from RAG import RAG
+
 load_dotenv() 
 
 class txt_reader:
