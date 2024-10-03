@@ -3,7 +3,6 @@ import pdf_to_txt
 import os
 
 if __name__ == "__main__":
-    # detect NvidiaAPI key
     if os.getenv("NVIDIA_API_KEY") is None:
         NVIDIA_API_KEY = input("Add your NVIDIA key here: ")
         os.environ['NVIDIA_API_KEY'] = NVIDIA_API_KEY
