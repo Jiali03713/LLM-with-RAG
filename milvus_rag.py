@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from torch.cuda.amp import autocast
 import torch
 from glob import glob
@@ -63,7 +60,7 @@ class RAG():
         tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-base")
         model = AutoModel.from_pretrained("thenlper/gte-base")
 
-            # move model to CUDA when available
+        # move model to CUDA when available
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = model.to(device)
 
@@ -105,7 +102,6 @@ class RAG():
         collection_name = self.collection_name
 
         if milvus_client.has_collection(collection_name):
-            # milvus_client.drop_collection(collection_name)
             milvus_client = milvus_client
         else:
             milvus_client.create_collection(
@@ -132,7 +128,7 @@ class RAG():
 
         return milvus_client, collection_name
 
-    def milvus_query(self):
+    def milvus_query(self, new_collection = False, collection_name = None):
         """
         This function query the existing database
         created by previous function milvus()
@@ -146,12 +142,12 @@ class RAG():
         """
 
         """ Create new embedding"""
-        milvus_client, collection_name = self.milvus_setup()
-
-        """ When dont want to embedding again"""
-        #from pymilvus import MilvusClient
-        #milvus_client = MilvusClient(uri="./rag.db")
-        #collection_name = "pdf_collection"
+        if new_collection:
+            milvus_client, collection_name = self.milvus_setup()
+        else:     
+            from pymilvus import MilvusClient
+            milvus_client = MilvusClient(uri="./rag.db")
+            collection_name = collection_name
 
 
         search_res = milvus_client.search(
@@ -167,7 +163,7 @@ class RAG():
         return retrieved_lines_with_distances
 
 
-    def pinecone_setup():
+  #  def pinecone_setup():
         from pinecone import Pinecone, ServerlessSpec
 
         index_name = 'gen-qa-openai-fast'
@@ -200,7 +196,7 @@ class RAG():
 
         return index, data
         
-    def pinecone_query(query):
+   # def pinecone_query(query):
         limit = 3750
         import time
 
@@ -271,19 +267,26 @@ class LLM:
         return result
 
 # def call_func(file_path, milvus_client, collection_name, batch_size, question):
-def run(file_path):
+
+def run_new(file_path):
     reader = txt_reader(file_path=file_path)
     raw_text = reader.read_docs()
 
     question = input("Enter the question: ")
     gte = RAG(raw_text=raw_text, query=question)
-    returned_vector = gte.milvus_query()
+    returned_vector = gte.milvus_query(new_collection=True)
 
     llm = LLM(returned_vectors=returned_vector)
     return llm.LLM(question)
 
 
+def run_old(collection_name):
+    question = input("Enter the question: ")
+    gte = RAG(raw_text="", query=question)
+    returned_vector = gte.milvus_query(new_collection=False, collection_name = collection_name)
 
+    llm = LLM(returned_vectors=returned_vector)
+    return llm.LLM(question)
 
 
 
@@ -296,7 +299,7 @@ if __name__ == "__main__":
     # batch_size = input("Enter the batch size for text embedding: ")
 
 
-    print(run(file_path))
+    print(run_old(file_path))
     # TODO: finish orginizing code and include flexibility of parameters
     # TODO: finish call_func
     # TODO: modify OCR?py
