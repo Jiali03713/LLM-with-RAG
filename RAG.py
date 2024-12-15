@@ -17,7 +17,7 @@ class RAG():
         self.raw_text = raw_text
         self.question = query
         self.client_name = "./rag.db"
-        self.collection_name = "one_hundred_collection"
+        self.collection_name = "sign"
 
 
     def emb_text(self, input_texts): 
