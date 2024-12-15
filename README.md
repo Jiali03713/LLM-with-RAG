@@ -1,4 +1,4 @@
-# Stage One (Current)
+# Stage One
 1. RAG File
    - Large Language Model:
      - Language Model: "databricks/dbrx-instruct": https://huggingface.co/databricks/dbrx-instruct 
@@ -16,13 +16,13 @@
 4. Progress(10/01/2024): **Simplified version works on Linux, with one query ability**
    - (10/02/2024): **Able to reuse collection for query**
    
-# Stage Two
-1. Improve Web Crawling file
-2. Creating pdf reader using OCR
+# Stage Two (Current)
+1. Creating pdf reader using OCR
    - accept uploaded pdf
    - read using EasyOCR
    - store results in files, preferably one file for each pdf
-4. RAG File supports recursive question and answer
+2. RAG File supports recursive question and answer
+3. Able to store historical QA in corresponding files
 
 # Stage Three
 1. Combine RAG with pdf reader
