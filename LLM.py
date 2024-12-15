@@ -1,5 +1,6 @@
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 import os
+from text_to_speech import text_to_speech
 
 class LLM:
     def __init__(self, returned_vectors) -> None:
@@ -38,6 +39,8 @@ class LLM:
             for chunk in client.stream([{"role": "user", "content": USER_PROMPT}]):
                 print(chunk.content, end="")
                 response.append(chunk.content)
+
+            text_to_speech(response)
             print()
 
             # Update context with the current response for follow-up questions
