@@ -25,14 +25,24 @@ class LLM:
         SYSTEM_PROMPT = """
                         Human: You are an AI assistant. You are able to find answers to the questions from the contextual passage snippets provided.
                         """
-        USER_PROMPT = f"""
-                        Use the following pieces of information enclosed in <context> tags to provide an answer to the question enclosed in <question> tags.
-                        <context>{context}</context>
-                        <question>{question}</question>
-                        """
-
         result = []
-        for chunk in client.stream([{"role":"user", "content":USER_PROMPT}]):
-            print(chunk.content, end="")
-        print()
-        return result
+
+        while question:
+            USER_PROMPT = f"""
+                            Use the following pieces of information enclosed in <context> tags to provide an answer to the question enclosed in <question> tags.
+                            You can also use the internet if the answer is not provided.
+                            <context>{context}</context>
+                            <question>{question}</question>
+                            """
+            response = []
+            for chunk in client.stream([{"role": "user", "content": USER_PROMPT}]):
+                print(chunk.content, end="")
+                response.append(chunk.content)
+            print()
+
+            # Update context with the current response for follow-up questions
+            context += " ".join(response)
+            question = input("Enter your next question (or press Enter to exit): ").strip()
+
+        print("Q&A session ended.")
+

@@ -114,7 +114,7 @@ class RAG():
         search_res = milvus_client.search(
             collection_name=collection_name,
             data=[self.emb_text(self.question)],  # Use the `emb_text` function to convert the question to an embedding vector
-            limit=64,  # Return top 3 results
+            limit=5,  # Return top 3 results
             search_params={"metric_type": "IP", "params": {}},  # Inner product distance
             output_fields=["text"],  # Return the text field
         )
