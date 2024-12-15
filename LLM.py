@@ -34,5 +34,5 @@ class LLM:
         result = []
         for chunk in client.stream([{"role":"user", "content":USER_PROMPT}]):
             print(chunk.content, end="")
-
+        print()
         return result

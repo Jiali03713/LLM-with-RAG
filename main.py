@@ -13,7 +13,7 @@ if __name__ == "__main__":
     filename = os.path.splitext(os.path.basename(file_path))[0]
     print(file_extension)
     if file_extension == '.pdf':
-        filename, txt_path = pdf_to_txt.run()
+        filename, txt_path = pdf_to_txt.run(file_path)
     else:
         filename  = filename
         txt_path = file_path

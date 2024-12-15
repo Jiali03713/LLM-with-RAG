@@ -44,6 +44,7 @@ def extract_text_pdfplumber(pdf_path):
     text_list = [element for element in text_list if element and isinstance(element, str) and len(element) > 10]
 
     save_text_to_file(text_list, os.path.join(output_folder, file_name))
+
     print(f"Text successfully extracted and saved to {os.path.join(output_folder, file_name)}.txt")
     output_path = os.path.join(output_folder, file_name) + ".txt"
 
@@ -70,10 +71,18 @@ def select_pdf():
             print("No file selected or invalid file.")
         
 
-def run():
-    file_path = input("Enter the path of your pdf file: ")
-    filename, output_path = extract_text_pdfplumber(file_path)
-    return filename, output_path
+def run(file_path):
+    file_name = os.path.splitext(os.path.basename(file_path))[0]
+    output_folder = "pdfReader_output"
+
+    output_path = f"{os.path.join(output_folder, file_name)}.txt"
+
+    if os.path.exists(output_path):
+        return file_name, output_path
+    else:
+        file_path = input("Enter the path of your pdf file: ")
+        filename, output_path = extract_text_pdfplumber(file_path)
+        return filename, output_path
 
 if __name__ == "__main__":
     output_path = run()
