@@ -7,6 +7,8 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel
 from torch import Tensor
 from torch.cuda.amp import autocast
+from pymilvus import MilvusClient
+
   # Embedding Function "thenlper/gte-base"
     # TODO: can be changed to other model to support
     # multilingual
@@ -16,8 +18,8 @@ class RAG():
     def __init__(self, raw_text, query):
         self.raw_text = raw_text
         self.question = query
-        self.client_name = "./rag.db"
-        self.collection_name = "sign"
+        self.client_name = None
+        self.collection_name = None
 
 
     def emb_text(self, input_texts): 
@@ -40,7 +42,6 @@ class RAG():
         tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-base")
         model = AutoModel.from_pretrained("thenlper/gte-base")
 
-        # move model to CUDA when available
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = model.to(device)
 
@@ -59,24 +60,9 @@ class RAG():
             embeddings = self.emb_text(lines)
         return embeddings
 
-    def milvus_setup(self):
-        """
-        This function 
-            1. create milvus database
-            2. Embed each line of raw text using embedding model
-            3. add embedded line to database    
-        If database need to be changed, change next function:
-        milvus_querying()
-
-        Args:
-            None
-
-        Returns:
-            milvus_client:
-            collection_name:
-        """
-
-        from pymilvus import MilvusClient
+    def milvus_setup(self, client_name, collection_name):
+        self.client_name = client_name
+        self.collection_name = collection_name
 
         milvus_client = MilvusClient(uri=self.client_name)
         collection_name = self.collection_name
@@ -108,7 +94,7 @@ class RAG():
 
         return milvus_client, collection_name
 
-    def milvus_query(self, new_collection = False, collection_name = None):
+    def milvus_query(self, collection_name = None, client_name = None):
         """
         This function query the existing database
         created by previous function milvus()
@@ -122,13 +108,8 @@ class RAG():
         """
 
         """ Create new embedding"""
-        if new_collection:
-            milvus_client, collection_name = self.milvus_setup()
-        else:     
-            from pymilvus import MilvusClient
-            milvus_client = MilvusClient(uri="./rag.db")
-            collection_name = collection_name
 
+        milvus_client, collection_name = self.milvus_setup(client_name=client_name, collection_name=collection_name)
 
         search_res = milvus_client.search(
             collection_name=collection_name,
@@ -141,66 +122,3 @@ class RAG():
         retrieved_lines_with_distances = [(res["entity"]["text"], res["distance"]) for res in search_res[0]]
         #print(json.dumps(retrieved_lines_with_distances, indent=4))
         return retrieved_lines_with_distances
-
-
-  #  def pinecone_setup():
-        from pinecone import Pinecone, ServerlessSpec
-
-        index_name = 'gen-qa-openai-fast'
-        pc = Pinecone(api_key = os.getenv('PINECONE_API_KEY'))
-
-        cloud = os.environ.get('PINECONE_CLOUD') or 'aws'
-        region = os.environ.get('PINECONE_REGION') or 'us-east-1'
-
-        spec = ServerlessSpec(cloud=cloud, region=region)
-        
-        
-        if index_name not in pc.list_indexes().names():
-        # if does not exist, create index
-            pc.create_index(
-                index_name,
-                dimension=1536,  # dimensionality of text-embedding-ada-002
-                metric='cosine',
-                spec=spec
-            )
-        
-        index = pc.Index(index_name)
-        data = []
-
-        text_lines = read_docs()
-
-        for i, line in enumerate(tqdm(text_lines, desc="Creating embeddings")):
-            data.append({"id": i, "values": emb_text(line), "metadata": line})
-
-        index.upsert(data)
-
-        return index, data
-        
-   # def pinecone_query(query):
-        limit = 3750
-        import time
-
-        embedded_query  = emb_text(query)
-
-        index, data = pinecone_setup()
-
-        # get relevant contexts
-        contexts = []
-        time_waited = 0
-
-        while (len(contexts) < 3 and time_waited < 60 * 12):
-            res = index.query(vector=embedded_query, top_k=3, include_metadata=True)
-            contexts = contexts + [
-                x['metadata']for x in res['matches']
-            ]
-            print(f"Retrieved {len(contexts)} contexts, sleeping for 15 seconds...")
-            time.sleep(15)
-            time_waited += 15
-
-        if time_waited >= 60 * 12:
-            print("Timed out waiting for contexts to be retrieved.")
-            contexts = ["No contexts retrieved. Try to answer the question yourself!"]
-
-
-        return contexts
-

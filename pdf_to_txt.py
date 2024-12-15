@@ -46,7 +46,8 @@ def extract_text_pdfplumber(pdf_path):
     save_text_to_file(text_list, os.path.join(output_folder, file_name))
     print(f"Text successfully extracted and saved to {os.path.join(output_folder, file_name)}.txt")
     output_path = os.path.join(output_folder, file_name) + ".txt"
-    return output_path
+
+    return file_name, output_path
 
 
 @contextmanager
@@ -70,14 +71,9 @@ def select_pdf():
         
 
 def run():
-    if os.getenv("$DISPLAY") is not None:
-        output_path = select_pdf()
-        return output_path
-
-    else:
-        file_path = input("Enter the path of your pdf file: ")
-        output_path = extract_text_pdfplumber(file_path)
-        return output_path
+    file_path = input("Enter the path of your pdf file: ")
+    filename, output_path = extract_text_pdfplumber(file_path)
+    return filename, output_path
 
 if __name__ == "__main__":
     output_path = run()

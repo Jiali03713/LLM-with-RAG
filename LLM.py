@@ -6,12 +6,7 @@ class LLM:
         self.returned_vectors = returned_vectors
     
     def Nvidia_LLM_setup(self):
-        # os.environ["NVIDIA_API_KEY"] = os.getenv('NVIDIA_API_KEY')
-        # TODO: need to be able to change question
-
         context = "\n".join([line_with_distance[0] for line_with_distance in self.returned_vectors])
-        # os.environ["LANGCHAIN_TRACING_V2"] = "true"
-        # os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
 
         client = ChatNVIDIA(
             model="databricks/dbrx-instruct",

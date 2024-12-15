@@ -7,28 +7,22 @@ if __name__ == "__main__":
         NVIDIA_API_KEY = input("Add your NVIDIA key here: ")
         os.environ['NVIDIA_API_KEY'] = NVIDIA_API_KEY
 
-
     # if user want to input new pdf
-    new_pdf = input("Do you want to input a new pdf[Y/N]: ")
-    if new_pdf.lower()== "y":
-        type = input("Pdf or txt?: ")
-        if type == "pdf":
-            txt_path = pdf_to_txt.run()
-            milvus_rag.run_new(txt_path)
-        if type == "txt":
-            txt_path = input("txtpath?: ")
-            milvus_rag.run_new(txt_path)
-
-
-
-    elif new_pdf.lower()=="n":
-        collection_name = input("Enter your collection name: ")
-        milvus_rag.run_old(collection_name)
-    
-
+    file_path = input("Enter you file path: ")
+    file_extension = os.path.splitext(os.path.basename(file_path))[1]
+    filename = os.path.splitext(os.path.basename(file_path))[0]
+    print(file_extension)
+    if file_extension == '.pdf':
+        filename, txt_path = pdf_to_txt.run()
     else:
-        # TODO implement resursive call
-        print("Invalid input. Better luck next time. Bye.")
+        filename  = filename
+        txt_path = file_path
+
+    milvus_rag.run(filename, txt_path)
+    
+    # else:
+    #     # TODO implement resursive call
+    #     print("Invalid input. Better luck next time. Bye.")
 
 
     #TODO: user what to query existing collection

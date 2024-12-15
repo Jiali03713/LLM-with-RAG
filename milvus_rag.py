@@ -17,23 +17,20 @@ class txt_reader:
             lines = file.readlines()
         return [line.strip() for line in lines]
     
+def milvus_config(filename, file_path):
+    client_name = "./rag.db"
+    collection_name = filename
+    return collection_name, client_name
 
-def run_new(file_path):
+def run(filename, file_path):
     reader = txt_reader(file_path=file_path)
     raw_text = reader.read_docs()
 
+    collection_name, client_name = milvus_config(filename=filename, file_path=file_path);
+
     question = input("Enter the question: ")
     gte = RAG(raw_text=raw_text, query=question)
-    returned_vector = gte.milvus_query(new_collection=True)
-
-    llm = LLM(returned_vectors=returned_vector)
-    return llm.LLM(question)
-
-
-def run_old(collection_name):
-    question = input("Enter the question: ")
-    gte = RAG(raw_text="", query=question)
-    returned_vector = gte.milvus_query(new_collection=False, collection_name = collection_name)
+    returned_vector = gte.milvus_query(collection_name=collection_name, client_name=client_name)
 
     llm = LLM(returned_vectors=returned_vector)
     return llm.LLM(question)
